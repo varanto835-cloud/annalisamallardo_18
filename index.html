@@ -417,20 +417,45 @@ const volumeSlider = document.getElementById('volumeSlider');
 // Imposta volume iniziale basso (25%)
 music.volume = 0.25;
 
-// Tenta di far partire la musica automaticamente dopo il caricamento
-window.addEventListener('load', () => {
-  setTimeout(() => {
-    music.play().catch(err => {
-      console.log('Autoplay bloccato, attendo interazione utente');
+let musicStarted = false;
+
+// Funzione per far partire la musica
+function startMusic() {
+  if (!musicStarted) {
+    music.play().then(() => {
+      musicStarted = true;
+      playPauseBtn.textContent = '⏸️';
+    }).catch(err => {
+      console.log('Autoplay in attesa di interazione');
     });
-  }, 2000);
-});
+  }
+}
+
+// Tenta autoplay immediato
+setTimeout(() => {
+  music.play().then(() => {
+    musicStarted = true;
+    playPauseBtn.textContent = '⏸️';
+  }).catch(() => {
+    // Se l'autoplay è bloccato, parte al primo click/touch
+    const startOnInteraction = () => {
+      startMusic();
+      document.removeEventListener('click', startOnInteraction);
+      document.removeEventListener('touchstart', startOnInteraction);
+      document.removeEventListener('scroll', startOnInteraction);
+    };
+    document.addEventListener('click', startOnInteraction);
+    document.addEventListener('touchstart', startOnInteraction);
+    document.addEventListener('scroll', startOnInteraction);
+  });
+}, 1000);
 
 // Toggle play/pause
 playPauseBtn.addEventListener('click', () => {
   if (music.paused) {
     music.play();
     playPauseBtn.textContent = '⏸️';
+    musicStarted = true;
   } else {
     music.pause();
     playPauseBtn.textContent = '▶️';
